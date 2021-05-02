@@ -1,0 +1,79 @@
+version: "3.7"
+
+services:
+    db_postgres:
+        image: postgres:13.2-alpine
+        container_name: docker_${PROYECT_NAME}-db
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=${DB_PASSWORD}
+            - POSTGRES_USER=${USER}
+            - POSTGRES_DB=${POSTGRES_DB}
+            - PGDATA=${PGDATA}
+            - HOSTNAME=${DB_HOSTNAME}
+        volumes:
+            - ./postgres/data:${PGDATA}
+        ports:
+            - "${DB_PORT}:5432"
+    
+    gui_postgres:
+        image: dpage/pgadmin4
+        container_name: docker_${PROYECT_NAME}-pgadmin
+        restart: always
+        environment:
+            - PGADMIN_DEFAULT_EMAIL=${EMAIL_SESSION}
+            - PGADMIN_DEFAULT_PASSWORD=${PG_PASSWORD}
+            # - PGADMIN_LISTEN_ADDRESS=${PG_PUERTO}
+            # - PGADMIN_LISTEN_PORT=${PG_PUERTO}
+            - HOSTNAME=${PG_HOSTNAME}
+
+        volumes:
+# chown -R 5050:5050 pgadmin 
+# cambiar de proprietario el directorio donde se guarda los datos
+# Esto se puede automatizar con config.py o algo parecido
+            - ./pgadmin/data:${PG_WORK_DIR}
+        ports:
+# puerto-Host:puerto-Contenedor
+            - "8092:5050"
+            - "8093:80"
+            - "8094:443"
+        links:
+            - "db_postgres:${PG_NOMBRE_CONEXION}"
+
+    php-web:
+        build:
+            context: ./php
+        restart: always
+        container_name: "docker_${PROYECT_NAME}-php_web"
+        environment:
+            - PGHOST=docker_${PROYECT_NAME}-db
+            - PGPORT=5432
+            - PGDATABASE=${DB_NAME}
+            - PGUSER=${DB_USER}
+            - PGPASSWORD=${DB_PASSWORD}
+            - HOSTNAME=${PHP_HOSTNAME}
+            - AKISMET_KEY=${AKISMET_KEY}
+        volumes:
+            - ../${PROYECT_NAME}:${PHP_WORK_DIR}
+        links:
+            - "db_postgres"
+
+    nginx:
+        build: 
+            context: ./nginx
+        restart: always
+        container_name: "docker_${PROYECT_NAME}-nginx"
+        environment:
+            - HOSTNAME=${NG_HOSTNAME}
+        volumes:
+            - ../${PROYECT_NAME}:${NG_WORKDIR}
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./nginx/sites/:/etc/nginx/sites-available
+            - ./nginx/conf.d/:/etc/nginx/conf.d
+            - ./logs:/var/log
+        depends_on:
+            - php-web
+        ports:
+            - "${NG_PORT}:80"
+            - "${NG_PORTSSL}:443"
+            
