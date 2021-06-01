@@ -15,7 +15,7 @@ services:
             - ./postgres/data:${PGDATA}
         ports:
             - "${DB_PORT}:5432"
-    
+
     gui_postgres:
         image: dpage/pgadmin4
         container_name: docker_${PROYECT_NAME}-pgadmin
@@ -53,10 +53,27 @@ services:
             - PGPASSWORD=${DB_PASSWORD}
             - HOSTNAME=${PHP_HOSTNAME}
             - AKISMET_KEY=${AKISMET_KEY}
+# Configuracion para MailCatcher >> No anduvo << 
+            # - SYMFONY_DEFAULT_ROUTE_SCHEME=${PHP_SY_DF_ROUTE_SCHEME}
+            # - SYMFONY_DEFAULT_ROUTE_HOST=${PHP_SY_DF_ROUTE_HOST}
+            # - MAILER_DSN="smtp://docker_${PROYECT_NAME}-mailer:1025"
+            # - ADMIN_EMAIL=${PHP_ADMIN_MAIL}
+# Configuracion webPack-Encore
+            - SYMFONY_PROJECT_DEFAULT_ROUTE_URL=http://localhost:8100/
+            - API_ENDPOINT=http://localhost:8100/
+            - ENV_API_ENDPOINT=http://localhost:8100/
+# Cofiguracion BlackFire
+            # - BLACKFIRE_CLIENT_ID=${BF_CLIENT_ID}
+            # - BLACKFIRE_CLIENT_TOKEN=${BF_CLIENT_TOKEN}
+# Configuracion Redis
+            - RSHOST=docker_${PROYECT_NAME}-redis
+            - RSPORT=6379
         volumes:
             - ../${PROYECT_NAME}:${PHP_WORK_DIR}
         links:
             - "db_postgres"
+        ports: 
+            - "8000:8000"
 
     nginx:
         build: 
@@ -76,4 +93,51 @@ services:
         ports:
             - "${NG_PORT}:80"
             - "${NG_PORTSSL}:443"
-            
+
+# Paso 20.6 Symfony-GuiaRapida
+# receptor de correo. Un receptor de correo proporciona un servidor SMTP que no 
+#entrega los correos electrónicos, sino que los hace disponibles a través de una interfaz Web:
+# >> No anduvo: levanto bien, pero no tomo las mails << 
+    # mailer:
+    #     image: schickling/mailcatcher
+    #     container_name: docker_${PROYECT_NAME}-mailer
+    #     ports: 
+    #         - "${MAILER_PORT_SMTP}:1025"
+    #         - "${MAILER_PORT}:1080"
+    #     environment:
+    #         - HOSTNAME=${MAILER_HOSTNAME}
+
+# Paso 29.2 Agente BlackFire en Docker.    
+    # blackfire:
+    #         image: blackfire/blackfire:2
+    #         container_name: "docker_${PROYECT_NAME}-blackfire"
+    #         environment:  
+    #             - BLACKFIRE_SERVER_ID=${BF_SERVER_ID}
+    #             - BLACKFIRE_SERVER_TOKEN=${BF_SERVER_TOKEN}
+    #             - CLIENT_ID=${BF_CLIENT_ID}
+    #             - CLIENT_TOKEN=${BF_CLIENT_TOKEN}
+    #             - HOSTNAME=${BF_HOSTNAME}
+    #         ports: 
+    #             - "${BF_PORT}:8707"
+
+# Paso 31 Redis
+    redis:
+            image: redis:5-alpine
+            container_name: "docker_${PROYECT_NAME}-redis"
+            environment:
+                - HOSTNAME=${RS_HOSTNAME}
+            ports: 
+                - "${RS_PORT}:6379"
+
+# Paso 32 Rabbit_MQ
+    rabbitmq:
+        image: rabbitmq:3.8.16-management-alpine
+        container_name: "docker_${PROYECT_NAME}-rabbitmq"
+        volumes: 
+            - ./rabbitmq/data:/var/lib/rabbitmq/mnesia/
+        environment:
+            - HOSTNAME=${RBIT_HOSTNAME}
+        ports: 
+            - "${RBIT_PORT}:5672"
+            - "${RBIT_PORT_A}:15672"
+    

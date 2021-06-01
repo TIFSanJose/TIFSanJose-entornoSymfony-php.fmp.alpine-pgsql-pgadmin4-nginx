@@ -1,5 +1,5 @@
-#FROM php:8.0.3-fpm-alpine3.13
-FROM php:7.4.16-fpm-alpine3.13
+FROM php:8.0.3-fpm-alpine3.13
+#FROM php:7.4.16-fpm-alpine3.13
 
 WORKDIR /var/www
 
@@ -14,6 +14,7 @@ RUN apk add --no-cache --update   \
                 wget \
                 curl \
                 zip \
+                yarn \
 # Instalar este paquete para poder conectarse desde este servidor al serveDB
                 postgresql-client \
 # App necesaria para instalacion de 
